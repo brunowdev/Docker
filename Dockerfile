@@ -6,8 +6,8 @@ CMD ["/sbin/entrypoint.sh"]
 ARG cachet_ver
 ARG archive_url
 
-ENV cachet_ver ${cachet_ver:-2.4}
-ENV archive_url ${archive_url:-https://github.com/cachethq/Cachet/archive/${cachet_ver}.tar.gz}
+ENV cachet_ver 2.4
+ENV archive_url https://codeload.github.com/brunowdev/Cachet/tar.gz/v2.4
 
 ENV COMPOSER_VERSION 1.6.3
 
@@ -70,19 +70,19 @@ RUN mkdir -p /var/www/html && \
     chown -R www-data:root /var/www /usr/share/nginx/cache /var/cache/nginx /var/lib/nginx/
 
 # Install composer
-RUN wget https://getcomposer.org/installer -O /tmp/composer-setup.php && \
-    wget https://composer.github.io/installer.sig -O /tmp/composer-setup.sig && \
+RUN wget https://getcomposer.org/installer --no-check-certificate -O /tmp/composer-setup.php && \
+    wget https://composer.github.io/installer.sig --no-check-certificate -O /tmp/composer-setup.sig && \
     php -r "if (hash('SHA384', file_get_contents('/tmp/composer-setup.php')) !== trim(file_get_contents('/tmp/composer-setup.sig'))) { unlink('/tmp/composer-setup.php'); echo 'Invalid installer' . PHP_EOL; exit(1); }" && \
-    php /tmp/composer-setup.php --version=$COMPOSER_VERSION --install-dir=bin && \
+    php /tmp/composer-setup.php --version=$COMPOSER_VERSION --install-dir=bin -- --disable-tls  && \
     php -r "unlink('/tmp/composer-setup.php');"
 
 WORKDIR /var/www/html/
 USER 1001
 
-RUN wget ${archive_url} && \
-    tar xzf ${cachet_ver}.tar.gz --strip-components=1 && \
+RUN wget -O tar.gz ${archive_url} --no-check-certificate && \
+    tar xzf tar.gz --strip-components=1 && \
     chown -R www-data:root /var/www/html && \
-    rm -r ${cachet_ver}.tar.gz && \
+    rm -r tar.gz && \
     php /bin/composer.phar global require "hirak/prestissimo:^0.3" && \
     php /bin/composer.phar install -o && \
     rm -rf bootstrap/cache/*
@@ -97,4 +97,5 @@ COPY entrypoint.sh /sbin/entrypoint.sh
 USER root
 RUN chmod g+rwx /var/run/nginx.pid && \
     chmod -R g+rw /var/www /usr/share/nginx/cache /var/cache/nginx /var/lib/nginx/ /etc/php7/php-fpm.d storage
+    
 USER 1001
